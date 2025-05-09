@@ -1,0 +1,29 @@
+component TorqueThrustCharacteristic
+    % TorqueThrustCharacteristic
+    % This Torque-thrust Characteristic block takes coefficients derived
+    % from data sheet via curve fitting
+    %
+   
+    inputs
+        thrust = {0,'N'};
+    end
+    
+    outputs
+        torque = {0,'N*m'};
+    end
+    
+    parameters
+        rotorDirection = RotorDirection.Clockwise; % Rotor direction
+        c1 = {-0.01035,'m/N'}; % Constant, c1
+        c2 = {0.02868,'m'}; % Constant, c2
+    end
+    
+    equations
+        if rotorDirection == RotorDirection.Clockwise
+            torque == (c1*thrust^2 + c2*thrust);
+            
+        else % RotorDirection.Anticlockwise
+            torque == -1*(c1*thrust^2 + c2*thrust);
+        end
+    end
+end

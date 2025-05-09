@@ -1,0 +1,90 @@
+component fault_injection
+    % Fault Injection : 1.4
+    % 
+    % The Fault Injection block is used to model the faults in the propulsion system 
+    % which would lead to the loss of motor torque. 
+    %
+    % Copyright 2021 The MathWorks, Inc.
+    inputs
+        I % :left
+    end
+
+    outputs
+        O % :right
+    end
+
+    inputs(ExternalAccess=none)
+        fault_trigger = { 0 , '1'}; % T:left
+    end
+
+    parameters
+        enable_faults = simscape.enum.onoff.off;    % Enable faults
+    end
+
+    parameters(ExternalAccess=none)
+        faulted_torque = { 0, '1' };     % Motor Torque when faulted
+        external_fault = simscape.enum.onoff.off;   % Enable external fault trigger
+        temporal_fault = simscape.enum.onoff.off;   % Enable temporal fault trigger
+        fault_time = { 5, 's' };            % Simulation time for fault event
+    end
+
+    if enable_faults
+        annotations
+            [external_fault,...
+                temporal_fault,...
+                faulted_torque] : ExternalAccess = modify;
+        end
+        variables
+            faulted = {value = {0, '1'}, priority = priority.high}; % Faulted
+        end
+        equations
+            assert(faulted_torque>=0);
+            assert(faulted_torque<=1);
+        end
+        if temporal_fault
+            annotations
+                fault_time : ExternalAccess = modify;
+            end
+            equations
+                assert(fault_time>=0)
+            end
+        end
+        if external_fault
+            annotations
+                fault_trigger : ExternalAccess = modify;
+            end
+        end
+        modecharts(ExternalAccess=none)
+            m = modechart
+                modes
+                    mode NOT_FAULTED
+                        equations
+                            faulted == 0;
+                        end
+                    end
+                    mode FAULTED
+                        equations
+                            faulted == 1;
+                        end
+                    end
+                end
+                transitions
+                    NOT_FAULTED->FAULTED : external_fault && fault_trigger >= 0.5;
+                    NOT_FAULTED->FAULTED : temporal_fault && time >= fault_time;
+                end
+            end
+        end
+    else
+        parameters
+            faulted = {0, '1'};
+        end
+    end
+
+    equations
+        O == if faulted
+            faulted_torque .* I
+        else
+            I
+        end;
+    end
+end
